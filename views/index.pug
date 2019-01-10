@@ -1,0 +1,38 @@
+doctype html
+html
+  head
+    meta(charset='utf-8')
+    title= title
+    meta(name='renderer', content='webkit')
+    meta(http-equiv='X-UA-Compatible', content='IE=edge,chrome=1')
+    meta(name='viewport', content='width=device-width, initial-scale=1, maximum-scale=1')
+    link(rel='stylesheet', href='./views/layui/css/layui.css', media='all')
+    //- 注意：如果你直接复制所有代码到本地，上述css路径需要改成你本地的
+  body
+    ul.layui-nav
+      li.layui-nav-item
+        a(href='') 最新活动
+      li.layui-nav-item.layui-this
+        a(href='javascript:;') 产品
+        dl.layui-nav-child
+          dd
+            a(href='') 选项1
+          dd
+            a(href='') 选项2
+          dd
+            a(href='') 选项3
+      li.layui-nav-item
+        a(href='') 大数据
+      li.layui-nav-item
+        a(href='javascript:;') 解决方案
+        dl.layui-nav-child
+          dd
+            a(href='') 移动模块
+          dd
+            a(href='') 后台模版
+          dd.layui-this
+            a(href='') 选中项
+          dd
+            a(href='') 电商平台
+      li.layui-nav-item
+        a(href='') 社区
