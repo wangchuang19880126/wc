@@ -16,7 +16,7 @@ app.use(logger())
 app.use(static(join(__dirname, "static")))
 
 //配置视图模板
-app.use(views(__dirname, "views"), {
+app.use(views(join(__dirname, "views")), {
     extension: "pug"//设置模板引擎
 })
 
@@ -24,8 +24,8 @@ app.use(views(__dirname, "views"), {
 app.use(router.routes())
     .use(router.allowedMethods())
 
-    
+
 // 监听端口
-app.listen(3001, () => {
-    console.log("服务器监听在3001端口！")
+app.listen(3000, () => {
+    console.log("服务器监听在3000端口！")
 })
