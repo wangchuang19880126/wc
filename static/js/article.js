@@ -26,6 +26,7 @@ layui.use(['layedit', 'layer', 'element'], function(){
     }
 
     $.post("/comment", data, (data) => {
+      console.log(data)
       layer.msg(data.msg, {
         time: 1000,
         end(){

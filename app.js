@@ -27,7 +27,7 @@ app.use(views(join(__dirname, "views"), {
 app.keys = ['wc'];
 const CONFIG = {
     key: 'Sid',
-    maxAge: 30000,//2小时
+    maxAge: 2 * 36e5,//2小时
     autoCommit: true,
     overwrite: true,
     httpOnly: true,
@@ -57,6 +57,39 @@ app.use(router.routes())
 
 
 // 监听端口
-app.listen(3000, () => {
-    console.log("服务器监听在3000端口！")
+app.listen(3001, () => {
+    console.log("服务器监听在3001端口！")
 })
+
+//创建管理员用户，如果管理员存在就返回
+{
+    const { db } = require("./Schema/config")
+    const UserSchema = require("./Schema/user")
+    const User = db.model("users", UserSchema)
+    const crypto = require("./utill/encrypt")
+
+    User.find({
+        username: "admin"
+    })
+        .then(data => {
+            if (data.length === 0) {
+                //管理员不存在
+                new User({
+                    username: "admin",
+                    password: crypto("admin"),
+                    role: 666,
+                    commentNum: 0,
+                    articleNum: 0,
+                }).save()
+                    .then(data => {
+                        console.log("创建管理员用户名：admin 密码： admin")
+                    })
+                    .catch(err => {
+                        console.log(err)
+                    })
+
+            } else {
+                console.log("管理员用户名：admin 密码： admin")
+            }
+        })
+}

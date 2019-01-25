@@ -1,29 +1,51 @@
 const fs = require("fs")
 const { db } = require("../Schema/config")
-const UserSchema = require("../Schema/user")
 const crypto = require("../utill/encrypt")
-// console.log(crypto)
+
+const ArticleSchema = require("../Schema/article")
+const Article = db.model("articles", ArticleSchema)
+
+const UserSchema = require("../Schema/user")
 const User = db.model("users", UserSchema)
-exports.root = async (ctx) => {
+exports.root = async ctx => {
+    let page = ctx.params.id || 1
+    page--
+
+    const maxNum = await Article.estimatedDocumentCount((err, num) => err ? console.log(err) : num)
+    const artList = await Article
+        .find()//查询数据
+        .sort("-created")//降序排列
+        .skip(5 * page)//跳过条数
+        .limit(5)//限制每一页的数据条数
+        .populate({
+            path: "author",//关联属性
+            select: "username _id avatar"//查询的属性
+        })//mongoose连表查询
+        .then(data => data)
+        .catch(err => console.log(err))
     await ctx.render("index", {
         title: "这是博客主页",
-        session:ctx.session,
+        session: ctx.session,
+        artList,
+        maxNum,
     })
 }
-exports.add = async (ctx) => {
+exports.add = async ctx => {
     const show = /^\/user\/(reg)$/.test(ctx.path)
     await ctx.render("register", {
         show,
     })
 }
 //注册用户
-exports.reg = async (ctx) => {
+exports.reg = async ctx => {
     //用户注册是用户发过来的数据
     const user = ctx.request.body
     const username = user.username
     const password = user.password
     await new Promise((resolve, reject) => {
-        User.find({ username }, (err, data) => {
+        User.find({
+            username
+        }, (err, data) => {
             if (err) return reject(err)
             if (data.length !== 0) {
                 //用户名已经存在
@@ -33,6 +55,8 @@ exports.reg = async (ctx) => {
             new User({
                 username,
                 password: crypto(password),
+                commentNum: 0,
+                articleNum: 0,
             }).save((err, data) => {
                 if (err) {
                     reject(err)
@@ -49,6 +73,7 @@ exports.reg = async (ctx) => {
             await ctx.render("isOk", {
                 status: "注册成功"
             })
+            ctx.redirect("/user/login")
         } else {
             //用户名已经存在
             await ctx.render("isOk", {
@@ -62,7 +87,7 @@ exports.reg = async (ctx) => {
     })
 }
 // 登录用户
-exports.login = async (ctx) => {
+exports.login = async ctx => {
     const user = ctx.request.body
     const username = user.username
     const password = user.password
@@ -87,17 +112,16 @@ exports.login = async (ctx) => {
                 ctx.cookies.set("username", username, {
                     domain: "localhost",
                     path: "/",
-                    maxAge: 30000,
+                    maxAge: 2 * 36e5,
                     httpOnly: true,
                     overwrite: false,
                     signed: true,
                 })
 
-                // console.log(data[0]._id)
                 ctx.cookies.set("uid", data[0]._id, {
                     domain: "localhost",
                     path: "/",
-                    maxAge: 30000,
+                    maxAge: 2 * 36e5,
                     httpOnly: true,
                     overwrite: false,
                     signed: true,
@@ -106,6 +130,8 @@ exports.login = async (ctx) => {
                 ctx.session = {
                     username,
                     uid: data[0]._id,
+                    avatar: data[0].avatar,
+                    role: data[0].role
                 }
 
 
@@ -124,18 +150,57 @@ exports.login = async (ctx) => {
             })
         })
 }
+exports.else = async ctx => {
+    await ctx.render("404")
+}
+
+
 //保持用户的登录状态
 exports.keepLog = async (ctx, next) => {
-    console.log(ctx.session.isNew , ctx.session)
-    console.log(1)
-    if(ctx.session.isNew){
-        //session没有数据
-        if(ctx.cookies.get("uid")){
-            ctx.session = {
-                username:ctx.cookies.get("username"),
-                uid:ctx.cookies.get("uid")
+    new Promise((res, rej) => {
+        User.find({
+            username: ctx.session.username
+        }, (err, data) => {
+            if (err) return rej(err)
+
+            res(data.length)
+        })
+    })
+        .then(async data => {
+            if (!data && ctx.session.username) {
+                ctx.session = null
+                ctx.cookies.set("username", null, {
+                    maxAge: 0,
+                })
+                ctx.cookies.set("uid", null, {
+                    maxAge: 0,
+                })
+                return
             }
-        }
-    } 
+            if (ctx.session.isNew && ctx.cookies.get("uid")) {
+                ctx.session = {
+                    username: ctx.cookies.get("username"),
+                    uid: ctx.cookies.get("uid")
+                }
+            }
+        }).catch(err => {
+            console.log(err)
+        })
     await next()
 }
+//退出登录
+exports.logout = async ctx => {
+    ctx.session = null
+    ctx.cookies.set("username", null, {
+        maxAge: 0,
+    })
+    ctx.cookies.set("uid", null, {
+        maxAge: 0,
+    })
+    // 重新定向首页
+    ctx.redirect("/user/login") //前端重定向location.href = "/"
+}
+
+
+
+
