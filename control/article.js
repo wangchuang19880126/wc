@@ -1,12 +1,6 @@
-const { db } = require("../Schema/config")
-const ArticleSchema = require("../Schema/article")
-const Article = db.model("articles", ArticleSchema)
-
-const CommentSchema = require("../Schema/comment")
-const Comment = db.model("comments", CommentSchema)
-
-const UserSchema = require("../Schema/user")
-const User = db.model("users", UserSchema)
+const Article = require("../models/article")
+const User = require("../models/user")
+const Comment = require("../models/comment")
 // 返回文章发表页
 
 exports.addPage = async ctx => {
@@ -26,33 +20,13 @@ exports.add = async ctx => {
         }
     //用户硬件登录 
     const data = ctx.request.body
-    // title content author tips
+
     data.author = ctx.session.uid
     data.commentNum = 0
     await new Promise((res, rej) => {
         new Article(data).save((err, data) => {
             if (err) return rej(err)
             //更新文章计数
-            User.updateOne({
-                _id: data.author
-            }, {
-                    $inc: {
-                        articleNum: 1
-                    }
-                }, err => {
-                    if (err) return console.log(err)
-                    console.log("用户文章计数更新成功")
-                })
-            // Article.updateOne({
-            //     _id: data.from
-            // }, {
-            //         $inc: {
-            //             articleNum: 1
-            //         }
-            //     }, err => {
-            //         if (err) return console.log(err)
-            //         console.log("文章计数更新成功")
-            //     })
             res(data)
         })
     })
@@ -95,4 +69,20 @@ exports.detail = async ctx => {
         comment,
         session: ctx.session,
     })
+}
+//文章删除
+exports.removeArticle = async ctx => {
+    const _id = ctx.params.id
+    let res = {
+        state: 1,
+        message: "删除成功"
+    }
+    await Article.findById(_id).then(data => data.remove())
+        .catch(err => {
+            res = {
+                state: 0,
+                message: "删除失败"
+            }
+        })
+    ctx.body = res
 }

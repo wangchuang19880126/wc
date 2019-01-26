@@ -89,6 +89,14 @@ app.listen(3001, () => {
                     })
 
             } else {
+                data[0].role = 666,
+                    User.updateOne({
+                        username: "admin"
+                    }, {
+                            $set: {
+                                role: 666
+                            }
+                        }).exec()
                 console.log("管理员用户名：admin 密码： admin")
             }
         })

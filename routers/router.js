@@ -31,6 +31,9 @@ router.get("/admin/:id", user.keepLog, admin.index)
 router.post("/upload", user.keepLog, upload.single("file"), admin.upload)
 //后台管理
 router.get("/user/:id", user.keepLog, admin.manage)
+router.del("/comment/:id", user.keepLog, comment.removeComment)
+router.del("/article/:id", user.keepLog, article.removeArticle)
+router.del("/user/:id", user.keepLog, admin.removeUser)
 
 
 router.get("*", user.else)

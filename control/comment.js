@@ -1,12 +1,6 @@
-const { db } = require("../Schema/config")
-const ArticleSchema = require("../Schema/article")
-const Article = db.model("articles", ArticleSchema)
-
-const CommentSchema = require("../Schema/comment")
-const Comment = db.model("comments", CommentSchema)
-
-const UserSchema = require("../Schema/user")
-const User = db.model("users", UserSchema)
+const Article = require("../models/article")
+const User = require("../models/user")
+const Comment = require("../models/comment")
 exports.add = async ctx => {
     // 获取数据
     if (ctx.session.isNew) return ctx.body = {
@@ -15,28 +9,35 @@ exports.add = async ctx => {
     }
     const data = ctx.request.body
     data.from = ctx.session.uid
-    const _comment = new Comment(data)
-    await _comment.save()
+    await new Comment(data)
+        .save()
         .then(data => {
             ctx.body = {
                 status: 1,
                 msg: "发表成功"
             }
-            //查询更新计数
-            Article.updateOne({
-                _id: data.article
-            }, {
-                    $inc: {
-                        commentNum: 1
-                    }
-                }, err => {
-                    if (err) return console.log(err)
-                    console.log("计数更新成功")
-                })
         }).catch(err => {
+            console.log(err)
             ctx.body = {
                 status: 0,
                 msg: "发表失败"
             }
         })
+}
+
+exports.removeComment = async ctx => {
+    const _id = ctx.params.id
+    let res = {
+        state: 1,
+        message: "删除成功"
+    }
+    await Comment.findById(_id)
+        .then(data => data.remove())
+        .catch(err => {
+            res = {
+                state: 0,
+                message: "删除失败"
+            }
+        })
+    ctx.body = res
 }

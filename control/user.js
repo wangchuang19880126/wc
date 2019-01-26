@@ -1,12 +1,8 @@
-const fs = require("fs")
-const { db } = require("../Schema/config")
+const Article = require("../models/article")
+const User = require("../models/user")
+const Comment = require("../models/comment")
 const crypto = require("../utill/encrypt")
-
-const ArticleSchema = require("../Schema/article")
-const Article = db.model("articles", ArticleSchema)
-
-const UserSchema = require("../Schema/user")
-const User = db.model("users", UserSchema)
+const fs = require("fs")
 exports.root = async ctx => {
     let page = ctx.params.id || 1
     page--
@@ -157,17 +153,17 @@ exports.else = async ctx => {
 
 //保持用户的登录状态
 exports.keepLog = async (ctx, next) => {
-    new Promise((res, rej) => {
+    await new Promise((res, rej) => {
         User.find({
             username: ctx.session.username
         }, (err, data) => {
             if (err) return rej(err)
 
-            res(data.length)
+            res(data)
         })
     })
         .then(async data => {
-            if (!data && ctx.session.username) {
+            if (!data.length && ctx.session.username) {
                 ctx.session = null
                 ctx.cookies.set("username", null, {
                     maxAge: 0,
@@ -180,7 +176,8 @@ exports.keepLog = async (ctx, next) => {
             if (ctx.session.isNew && ctx.cookies.get("uid")) {
                 ctx.session = {
                     username: ctx.cookies.get("username"),
-                    uid: ctx.cookies.get("uid")
+                    uid: ctx.cookies.get("uid"),
+                    avatar:data[0].avatar
                 }
             }
         }).catch(err => {

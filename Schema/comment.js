@@ -1,6 +1,7 @@
 const { Schema } = require("./config")
 const ObjectId = Schema.Types.ObjectId
 
+
 const CommentSchema = new Schema({
     // 头像   用户名  
     // 文章
@@ -22,4 +23,53 @@ const CommentSchema = new Schema({
             createdAt: "created"
         }
     })
+//保存评论的钩子
+CommentSchema.post("save", doc => {
+    const User = require("../models/user")
+    const Article = require("../models/article")
+    const { article,from } = doc
+    console.log(article)
+    Article.updateOne({
+        _id: article
+    }, {
+            $inc: {
+                commentNum: 1
+            }
+        }, err => {
+            if (err) return console.log(err)
+            console.log("文章评论计数更新成功")
+        })
+    User.updateOne({
+        _id: from
+    }, {
+            $inc: {
+                commentNum: 1
+            }
+        }, err => {
+            if (err) return console.log(err)
+            console.log("用户评论计数更新成功")
+        })
+})
+//设置删除钩子
+CommentSchema.post("remove", doc => {
+    const User = require("../models/user")
+    const Article = require("../models/article")
+    const { article, from } = doc
+    User.updateOne({
+        _id: from
+    }, {
+            $inc: {
+                commentNum: -1
+            }
+        }).then(data => console.log("用户评论数量减一"))
+        .catch(err => console.log("用户评论数量没有变化"))
+    Article.updateOne({
+        _id: article
+    }, {
+            $inc: {
+                commentNum: -1
+            }
+        }).then(data => console.log("文章评论数量减一"))
+        .catch(err => console.log("文章评论数量没有变化"))
+})
 module.exports = CommentSchema

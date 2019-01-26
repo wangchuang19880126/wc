@@ -1,15 +1,9 @@
-const { db } = require("../Schema/config")
-const ArticleSchema = require("../Schema/article")
-const Article = db.model("articles", ArticleSchema)
+const Article = require("../models/article")
+const User = require("../models/user")
+const Comment = require("../models/comment")
 
-const CommentSchema = require("../Schema/comment")
-const Comment = db.model("comments", CommentSchema)
-// const upload = require("../utill/upload")
 const fs = require("fs")
 const { join } = require("path")
-const UserSchema = require("../Schema/user")
-const User = db.model("users", UserSchema)
-
 
 exports.index = async ctx => {
     if (ctx.session.isNew) {
@@ -83,10 +77,7 @@ exports.manage = async ctx => {
         case "users":
             await User.find()
                 .then(data => {
-                    console.log(data)
                     ctx.body = {
-                        commentCount:data.commentNum,
-                        articleCount:data.articleNum,
                         code: 0,
                         count: data.length,
                         data,
@@ -94,4 +85,20 @@ exports.manage = async ctx => {
                 }).catch(err => console.log(err))
             break
     }
+}
+exports.removeUser = async ctx => {
+    const _id = ctx.params.id
+    let res = {
+        state: 1,
+        message: "删除成功"
+    }
+    await User.findById(_id)
+        .then(data => data.remove())
+        .catch(err => {
+            res = {
+                state: 0,
+                message: "删除失败"
+            }
+        })
+    ctx.body = res
 }
